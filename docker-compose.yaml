@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  java-app:
+    build:
+      context: .
+      dockerfile: Dockerfile-java
+      args:
+        - JAR_FILE=target/meuapp.jar
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=jdbc:oracle:thin:@oracledb:1521/XE
+      - DATABASE_USER=system
+      - DATABASE_PASSWORD=123456789
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      - app-network
+    restart: always
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - java-app
+    networks:
+      - app-network
+    restart: always
+
+  oracledb:
+    build:
+      context: .
+      dockerfile: Dockerfile-oracle
+      args:
+        - ORACLE_PASSWORD=123456789
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    environment:
+      - ORACLE_PWD=oracle_senha
+    volumes:
+      - oracledb-data:/opt/oracle/oradata
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  oracledb-data:
+
+networks:
+  app-network:
